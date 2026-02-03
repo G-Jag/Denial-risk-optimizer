@@ -92,15 +92,18 @@ This system answers:
 - Target: `Denied` vs `Not Denied`
 - Output: Probability of denial (shown as %)
 
-**Features used (pre-decision only)**
+**Features used by the model and shown in the dashboard (pre-decision only):**
 - Insurance Type
 - Procedure Code
 - Diagnosis Code
 - Billed Amount
 - Date of Service
-- Follow-up Required flag
+- Follow-up Required
 
-> ⚠️ Post-adjudication fields (Reason Code, Claim Status, Paid Amount) are **not used** for prediction to avoid data leakage.
+Post-adjudication fields such as Reason Code, Claim Status, and Paid/Allowed Amounts
+exist in the dataset but are intentionally excluded from both the model and the dashboard
+to avoid data leakage and keep the system focused on early risk prediction.
+
 
 ---
 
@@ -120,18 +123,10 @@ This ensures:
 
 ## 🖥️ Dashboard Highlights
 
-The Streamlit dashboard is designed for **non-technical stakeholders**:
+The Streamlit dashboard is designed for non-technical stakeholders and intentionally
+displays only the features used by the model. This avoids confusion and ensures that
+all visible information directly contributes to the prediction and prioritization logic.
 
-- Denial risk shown as **percent**
-- Clear **High / Medium / Low** risk labels
-- Simple filters:
-  - Payer
-  - Date of Service
-  - Reviewer time budget
-- Clear **Recommended / Not Recommended** decision
-- Plain-language explanations:
-  - “Why risk is high”
-  - “Why risk is low”
 
 ---
 
