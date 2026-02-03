@@ -14,6 +14,19 @@ ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "claims.db"
 MODEL_PATH = ROOT / "models" / "xgb_denial_model.joblib"
 
+import subprocess
+
+def run(cmd: str):
+    subprocess.check_call(cmd, shell=True)
+
+# Build artifacts on first run (Streamlit Cloud is a fresh container)
+if not DB_PATH.exists():
+    run("python src/load_to_sqlite.py")
+    run("python src/clean_validate.py")
+
+if not MODEL_PATH.exists():
+    run("python src/train_xgboost.py")
+
 
 # -----------------------------
 # Helpers
