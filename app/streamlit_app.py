@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 from joblib import load
-import pulp
+
 
 ROOT = Path(__file__).resolve().parents[1]
 DB_PATH = ROOT / "data" / "claims.db"
@@ -29,16 +29,6 @@ def estimate_recovery(df: pd.DataFrame) -> pd.Series:
     allowed = pd.to_numeric(df["Allowed Amount"], errors="coerce").fillna(0)
     paid = pd.to_numeric(df["Paid Amount"], errors="coerce").fillna(0)
     return (allowed - paid).clip(lower=0)
-
-
-def optimize_knapsack(expected_value: np.ndarray, minutes: np.ndarray, capacity: int) -> np.ndarray:
-    n = len(expected_value)
-    x = pulp.LpVariable.dicts("x", range(n), cat="Binary")
-    prob = pulp.LpProblem("ClaimPrioritization", pulp.LpMaximize)
-    prob += pulp.lpSum(expected_value[i] * x[i] for i in range(n))
-    prob += pulp.lpSum(minutes[i] * x[i] for i in range(n)) <= int(capacity)
-    prob.solve(pulp.PULP_CBC_CMD(msg=False))
-    return np.array([pulp.value(x[i]) for i in range(n)]) > 0.5
 
 
 def fmt_pct(x):
@@ -126,10 +116,20 @@ df_f["review_minutes"] = estimate_review_minutes(df_f)
 df_f["estimated_recovery"] = estimate_recovery(df_f)
 df_f["expected_value"] = df_f["denial_prob"] * df_f["estimated_recovery"]
 
-df_f["selected_for_review"] = optimize_knapsack(
-    df_f["expected_value"].to_numpy(),
-    df_f["review_minutes"].to_numpy(),
-    minutes_budget,
+# Greedy selection: sort by value per minute and pick until budget is used
+df_f = df_f.sort_values("expected_value", ascending=False).copy()
+
+used = 0
+selected_flags = []
+for m in df_f["review_minutes"].astype(int).tolist():
+    if used + m <= int(minutes_budget):
+        selected_flags.append(True)
+        used += m
+    else:
+        selected_flags.append(False)
+
+df_f["selected_for_review"] = selected_flags
+
 )
 
 df_out = df_f.sort_values(
